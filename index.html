@@ -16,91 +16,60 @@
       --btn: #2a362e;
     }
     * { box-sizing: border-box; }
-    html, body {
-      margin: 0;
-      min-height: 100%;
-      background: var(--bg);
-      color: var(--text);
-      font-family: system-ui, Segoe UI, sans-serif;
-    }
-    body {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding: 1.25rem 1rem 2rem;
-    }
-    h1 {
-      font-size: 1.15rem;
-      font-weight: 600;
-      letter-spacing: 0.04em;
-      text-transform: uppercase;
-      color: var(--muted);
-      margin: 0 0 0.25rem;
-    }
-    .clock {
-      font-variant-numeric: tabular-nums;
-      font-size: clamp(4.5rem, 22vw, 8rem);
-      font-weight: 700;
-      line-height: 1;
-      margin: 1.25rem 0 0.5rem;
-    }
-    .status {
-      min-height: 1.4rem;
-      color: var(--muted);
-      margin-bottom: 1.5rem;
-    }
-    .row {
-      display: flex;
-      gap: 0.75rem;
+    html, body { margin: 0; min-height: 100%; background: var(--bg); color: var(--text); font-family: system-ui, Segoe UI, sans-serif; }
+    body { display: flex; flex-direction: column; align-items: center; padding: 1.25rem 1rem 2rem; }
+    h1 { font-size: 1.15rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); margin: 0 0 0.25rem; }
+    .clock { font-variant-numeric: tabular-nums; font-size: clamp(4.2rem, 20vw, 7.5rem); font-weight: 700; line-height: 1; margin: 1rem 0 0.35rem; }
+    .status { min-height: 1.4rem; color: var(--muted); margin-bottom: 1rem; }
+    .target {
       width: min(420px, 100%);
+      background: var(--card);
+      border-radius: 16px;
+      padding: 0.85rem 1rem;
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
     }
+    .target p { margin: 0; color: var(--muted); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.04em; }
+    .target strong { display: block; font-size: 1.35rem; font-variant-numeric: tabular-nums; color: var(--text); }
+    .step { display: flex; gap: 0.5rem; }
+    .step button {
+      width: 48px; height: 48px; flex: none; padding: 0;
+      border-radius: 12px; font-size: 1.4rem;
+    }
+    .row { display: flex; gap: 0.75rem; width: min(420px, 100%); }
     button {
-      flex: 1;
-      border: 0;
-      border-radius: 14px;
-      padding: 1.1rem 0.75rem;
-      font-size: 1.05rem;
-      font-weight: 650;
-      color: var(--text);
-      background: var(--btn);
-      cursor: pointer;
+      flex: 1; border: 0; border-radius: 14px; padding: 1.1rem 0.75rem;
+      font-size: 1.05rem; font-weight: 650; color: var(--text); background: var(--btn); cursor: pointer;
     }
     button.go { background: var(--go); color: #06210f; }
     button.stop { background: var(--stop); color: #fff; }
     .stats {
-      width: min(420px, 100%);
-      margin-top: 1.75rem;
-      background: var(--card);
-      border-radius: 16px;
-      padding: 1rem 1.1rem;
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 0.75rem 1rem;
+      width: min(420px, 100%); margin-top: 1.5rem; background: var(--card);
+      border-radius: 16px; padding: 1rem 1.1rem;
+      display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem 1rem;
     }
-    .stats span {
-      display: block;
-      color: var(--muted);
-      font-size: 0.75rem;
-      text-transform: uppercase;
-      letter-spacing: 0.04em;
-    }
-    .stats strong {
-      font-size: 1.35rem;
-      font-variant-numeric: tabular-nums;
-    }
-    .hint {
-      width: min(420px, 100%);
-      margin-top: 1rem;
-      color: var(--muted);
-      font-size: 0.9rem;
-      line-height: 1.4;
-    }
+    .stats span { display: block; color: var(--muted); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.04em; }
+    .stats strong { font-size: 1.35rem; font-variant-numeric: tabular-nums; }
+    .hint { width: min(420px, 100%); margin-top: 1rem; color: var(--muted); font-size: 0.9rem; line-height: 1.4; }
   </style>
 </head>
 <body>
   <h1>Plank</h1>
   <div class="clock" id="clock">0:00</div>
-  <div class="status" id="status">Ready</div>
+  <div class="status" id="status">Set your time, then Start</div>
+  <div class="target">
+    <div>
+      <p>Target</p>
+      <strong id="targetLabel">1:00</strong>
+    </div>
+    <div class="step">
+      <button type="button" id="minus" aria-label="Less time">−</button>
+      <button type="button" id="plus" aria-label="More time">+</button>
+    </div>
+  </div>
   <div class="row">
     <button class="go" id="toggle" type="button">Start</button>
     <button id="reset" type="button">Reset</button>
@@ -111,7 +80,7 @@
     <div><span>Best hold</span><strong id="best">—</strong></div>
     <div><span>Total time</span><strong id="total">0:00</strong></div>
   </div>
-  <p class="hint">Start when you get into the plank. Beep at start, every 10 seconds, and when you stop. Unmute the phone. Best hold is saved on this device.</p>
+  <p class="hint">+ and − change the target by 15 seconds. Start beep, a beep every 15 seconds, finish beep when you hit the target or tap Stop. Unmute the phone.</p>
   <script>
     const clock = document.getElementById("clock");
     const status = document.getElementById("status");
@@ -121,24 +90,23 @@
     const lastEl = document.getElementById("last");
     const bestEl = document.getElementById("best");
     const totalEl = document.getElementById("total");
+    const targetLabel = document.getElementById("targetLabel");
 
     let running = false;
     let startedAt = 0;
-    let elapsed = 0;
     let tickId = null;
     let sets = 0;
     let sessionTotal = 0;
     let last = 0;
     let best = Number(localStorage.getItem("plankBest") || 0);
+    let targetMs = Number(localStorage.getItem("plankTarget") || 60000);
     let wake = null;
     let audio;
     let lastBeepSec = 0;
 
     function fmt(ms) {
-      const s = Math.floor(ms / 1000);
-      const m = Math.floor(s / 60);
-      const r = s % 60;
-      return m + ":" + String(r).padStart(2, "0");
+      const s = Math.max(0, Math.floor(ms / 1000));
+      return Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0");
     }
 
     function sound(freq, ms, vol) {
@@ -149,94 +117,119 @@
         const g = audio.createGain();
         o.type = "sine";
         o.frequency.value = freq;
-        g.gain.value = vol || 0.12;
+        g.gain.value = vol || 0.14;
         o.connect(g);
         g.connect(audio.destination);
         o.start();
-        o.stop(audio.currentTime + (ms || 0.12) / 1000);
+        o.stop(audio.currentTime + (ms || 120) / 1000);
       } catch (_) {}
-      if (navigator.vibrate) navigator.vibrate(ms > 200 ? [80, 40, 80] : 40);
+      if (navigator.vibrate) navigator.vibrate(ms > 180 ? [90, 50, 90] : 50);
+    }
+
+    function finishBeep() {
+      sound(523, 140, 0.16);
+      setTimeout(() => sound(392, 280, 0.16), 160);
+    }
+
+    function nowMs() {
+      return running ? Date.now() - startedAt : 0;
     }
 
     function render() {
-      const now = running ? Date.now() - startedAt : elapsed;
+      const now = nowMs();
       clock.textContent = fmt(now);
+      targetLabel.textContent = fmt(targetMs);
       setsEl.textContent = sets + (sets === 1 ? " plank" : " planks");
       lastEl.textContent = last ? fmt(last) : "—";
       bestEl.textContent = best ? fmt(best) : "—";
-      totalEl.textContent = fmt(sessionTotal + (running ? now : 0));
+      totalEl.textContent = fmt(sessionTotal + now);
       if (running) {
         const sec = Math.floor(now / 1000);
-        if (sec > 0 && sec % 10 === 0 && sec !== lastBeepSec) {
+        if (sec > 0 && sec % 15 === 0 && sec !== lastBeepSec && now < targetMs) {
           lastBeepSec = sec;
-          sound(880, 90, 0.14);
+          sound(880, 100, 0.15);
         }
+        if (now >= targetMs) complete();
       }
     }
 
     async function keepAwake(on) {
       try {
-        if (on && "wakeLock" in navigator) {
-          wake = await navigator.wakeLock.request("screen");
-        } else if (wake) {
-          await wake.release();
-          wake = null;
-        }
+        if (on && "wakeLock" in navigator) wake = await navigator.wakeLock.request("screen");
+        else if (wake) { await wake.release(); wake = null; }
       } catch (_) {}
     }
 
     function start() {
       running = true;
-      startedAt = Date.now() - elapsed;
+      startedAt = Date.now();
       lastBeepSec = 0;
       toggle.textContent = "Stop";
       toggle.classList.remove("go");
       toggle.classList.add("stop");
-      status.textContent = "Holding…";
-      sound(660, 120, 0.14);
+      status.textContent = "Holding to " + fmt(targetMs);
+      sound(660, 140, 0.16);
       keepAwake(true);
-      tickId = setInterval(render, 100);
+      tickId = setInterval(render, 80);
       render();
     }
 
-    function stop() {
-      elapsed = Date.now() - startedAt;
-      running = false;
-      clearInterval(tickId);
-      last = elapsed;
+    function record(ms) {
+      last = ms;
       sets += 1;
-      sessionTotal += elapsed;
-      if (elapsed > best) {
-        best = elapsed;
+      sessionTotal += ms;
+      if (ms > best) {
+        best = ms;
         localStorage.setItem("plankBest", String(best));
       }
-      elapsed = 0;
+    }
+
+    function halt() {
+      running = false;
+      clearInterval(tickId);
       toggle.textContent = "Start";
       toggle.classList.add("go");
       toggle.classList.remove("stop");
-      status.textContent = "Rest. Last hold " + fmt(last);
-      sound(330, 220, 0.16);
       keepAwake(false);
+    }
+
+    function complete() {
+      if (!running) return;
+      record(targetMs);
+      halt();
+      status.textContent = "Done. " + fmt(targetMs);
+      finishBeep();
       render();
     }
 
-    toggle.addEventListener("click", () => (running ? stop() : start()));
+    function stopEarly() {
+      if (!running) return;
+      record(Math.min(nowMs(), targetMs));
+      halt();
+      status.textContent = "Stopped. Last hold " + fmt(last);
+      finishBeep();
+      render();
+    }
+
+    function changeTarget(dir) {
+      if (running) return;
+      targetMs = Math.min(30 * 60 * 1000, Math.max(15 * 1000, targetMs + dir * 15 * 1000));
+      localStorage.setItem("plankTarget", String(targetMs));
+      render();
+    }
+
+    toggle.addEventListener("click", () => (running ? stopEarly() : start()));
     resetBtn.addEventListener("click", () => {
-      running = false;
-      clearInterval(tickId);
-      elapsed = 0;
+      halt();
       sets = 0;
       sessionTotal = 0;
       last = 0;
       lastBeepSec = 0;
-      toggle.textContent = "Start";
-      toggle.classList.add("go");
-      toggle.classList.remove("stop");
-      status.textContent = "Ready";
-      keepAwake(false);
+      status.textContent = "Set your time, then Start";
       render();
     });
-
+    document.getElementById("minus").addEventListener("click", () => changeTarget(-1));
+    document.getElementById("plus").addEventListener("click", () => changeTarget(1));
     document.addEventListener("visibilitychange", () => {
       if (document.visibilityState === "visible" && running) keepAwake(true);
     });
