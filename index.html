@@ -121,8 +121,14 @@
     let wake = null;
     let lastBeepSec = 0;
 
-    startLine.value = localStorage.getItem("plankStartSay") || "start cunt";
-    finishLine.value = localStorage.getItem("plankFinishSay") || "finish cunt";
+    function cleanLine(saved, fallback) {
+      if (!saved || saved.toLowerCase().indexOf("cunt") !== -1) return fallback;
+      return saved;
+    }
+    startLine.value = cleanLine(localStorage.getItem("plankStartSay"), "start");
+    finishLine.value = cleanLine(localStorage.getItem("plankFinishSay"), "finish");
+    localStorage.setItem("plankStartSay", startLine.value);
+    localStorage.setItem("plankFinishSay", finishLine.value);
 
     function saveLines() {
       localStorage.setItem("plankStartSay", startLine.value);
