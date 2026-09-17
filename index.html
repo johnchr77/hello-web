@@ -21,21 +21,33 @@
     h1 { font-size: 1.15rem; font-weight: 600; letter-spacing: 0.03em; color: var(--muted); margin: 0 0 0.25rem; }
     .clock { font-variant-numeric: tabular-nums; font-size: clamp(4.2rem, 20vw, 7.5rem); font-weight: 700; line-height: 1; margin: 1rem 0 0.35rem; }
     .status { min-height: 1.4rem; color: var(--muted); margin-bottom: 1rem; }
-    .target {
+    .target, .lines {
       width: min(420px, 100%);
       background: var(--card);
       border-radius: 16px;
       padding: 0.85rem 1rem;
       margin-bottom: 1rem;
+    }
+    .target {
       display: flex;
       align-items: center;
       justify-content: space-between;
       gap: 0.75rem;
     }
-    .target p { margin: 0; color: var(--muted); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.04em; }
+    .target p, .lines p { margin: 0 0 0.35rem; color: var(--muted); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.04em; }
     .target strong { display: block; font-size: 1.35rem; font-variant-numeric: tabular-nums; color: var(--text); }
     .step { display: flex; gap: 0.5rem; }
     .step button { width: 48px; height: 48px; flex: none; padding: 0; border-radius: 12px; font-size: 1.4rem; }
+    .lines label { display: block; color: var(--muted); font-size: 0.75rem; margin: 0.4rem 0 0.2rem; }
+    .lines input {
+      width: 100%;
+      border: 0;
+      border-radius: 10px;
+      padding: 0.65rem 0.7rem;
+      background: #121914;
+      color: var(--text);
+      font-size: 1rem;
+    }
     .row { display: flex; gap: 0.75rem; width: min(420px, 100%); }
     button {
       flex: 1; border: 0; border-radius: 14px; padding: 1.1rem 0.75rem;
@@ -67,6 +79,13 @@
       <button type="button" id="plus" aria-label="More time">+</button>
     </div>
   </div>
+  <div class="lines">
+    <p>Voice lines</p>
+    <label for="startLine">Start</label>
+    <input id="startLine" type="text" maxlength="80" />
+    <label for="finishLine">Finish</label>
+    <input id="finishLine" type="text" maxlength="80" />
+  </div>
   <div class="row">
     <button class="go" id="toggle" type="button">Start</button>
     <button id="reset" type="button">Reset</button>
@@ -77,7 +96,7 @@
     <div><span>Best hold</span><strong id="best">—</strong></div>
     <div><span>Total time</span><strong id="total">0:00</strong></div>
   </div>
-  <p class="hint">On a 1 minute hold it says 15 seconds, 30 seconds, 45 seconds, then finish. Unmute the phone. Volume up.</p>
+  <p class="hint">Type what it should say at start and finish. 15 / 30 / 45 still spoken. Unmute the phone.</p>
   <script>
     const clock = document.getElementById("clock");
     const status = document.getElementById("status");
@@ -88,6 +107,8 @@
     const bestEl = document.getElementById("best");
     const totalEl = document.getElementById("total");
     const targetLabel = document.getElementById("targetLabel");
+    const startLine = document.getElementById("startLine");
+    const finishLine = document.getElementById("finishLine");
 
     let running = false;
     let startedAt = 0;
@@ -100,6 +121,18 @@
     let wake = null;
     let lastBeepSec = 0;
 
+    startLine.value = localStorage.getItem("plankStartSay") || "start cunt";
+    finishLine.value = localStorage.getItem("plankFinishSay") || "finish cunt";
+
+    function saveLines() {
+      localStorage.setItem("plankStartSay", startLine.value);
+      localStorage.setItem("plankFinishSay", finishLine.value);
+    }
+    startLine.addEventListener("change", saveLines);
+    finishLine.addEventListener("change", saveLines);
+    startLine.addEventListener("blur", saveLines);
+    finishLine.addEventListener("blur", saveLines);
+
     function fmt(ms) {
       const s = Math.max(0, Math.floor(ms / 1000));
       return Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0");
@@ -107,7 +140,7 @@
 
     function say(text) {
       try {
-        if (!window.speechSynthesis) return;
+        if (!window.speechSynthesis || !text) return;
         speechSynthesis.cancel();
         const u = new SpeechSynthesisUtterance(text);
         u.rate = 1;
@@ -162,6 +195,7 @@
     }
 
     function start() {
+      saveLines();
       running = true;
       startedAt = Date.now();
       lastBeepSec = 0;
@@ -169,7 +203,7 @@
       toggle.classList.remove("go");
       toggle.classList.add("stop");
       status.textContent = "Holding to " + fmt(targetMs);
-      say("start");
+      say(startLine.value.trim() || "start");
       keepAwake(true);
       tickId = setInterval(render, 80);
       render();
@@ -199,7 +233,7 @@
       record(targetMs);
       halt();
       status.textContent = "Done. " + fmt(targetMs);
-      say("finish");
+      say(finishLine.value.trim() || "finish");
       render();
     }
 
@@ -208,7 +242,7 @@
       record(Math.min(nowMs(), targetMs));
       halt();
       status.textContent = "Stopped. Last hold " + fmt(last);
-      say("finish");
+      say(finishLine.value.trim() || "finish");
       render();
     }
 
