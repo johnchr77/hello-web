@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#0f1410" />
+  <title>Plank timer</title>
+  <style>
+    :root {
+      --bg: #0f1410;
+      --card: #1a221c;
+      --text: #e8f0e9;
+      --muted: #8fa394;
+      --go: #3dcc7a;
+      --stop: #e25b4a;
+      --btn: #2a362e;
+    }
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      min-height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: system-ui, Segoe UI, sans-serif;
+    }
+    body {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 1.25rem 1rem 2rem;
+    }
+    h1 {
+      font-size: 1.15rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin: 0 0 0.25rem;
+    }
+    .clock {
+      font-variant-numeric: tabular-nums;
+      font-size: clamp(4.5rem, 22vw, 8rem);
+      font-weight: 700;
+      line-height: 1;
+      margin: 1.25rem 0 0.5rem;
+    }
+    .status {
+      min-height: 1.4rem;
+      color: var(--muted);
+      margin-bottom: 1.5rem;
+    }
+    .row {
+      display: flex;
+      gap: 0.75rem;
+      width: min(420px, 100%);
+    }
+    button {
+      flex: 1;
+      border: 0;
+      border-radius: 14px;
+      padding: 1.1rem 0.75rem;
+      font-size: 1.05rem;
+      font-weight: 650;
+      color: var(--text);
+      background: var(--btn);
+      cursor: pointer;
+    }
+    button.go { background: var(--go); color: #06210f; }
+    button.stop { background: var(--stop); color: #fff; }
+    .stats {
+      width: min(420px, 100%);
+      margin-top: 1.75rem;
+      background: var(--card);
+      border-radius: 16px;
+      padding: 1rem 1.1rem;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.75rem 1rem;
+    }
+    .stats span {
+      display: block;
+      color: var(--muted);
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .stats strong {
+      font-size: 1.35rem;
+      font-variant-numeric: tabular-nums;
+    }
+    .hint {
+      width: min(420px, 100%);
+      margin-top: 1rem;
+      color: var(--muted);
+      font-size: 0.9rem;
+      line-height: 1.4;
+    }
+  </style>
+</head>
+<body>
+  <h1>Plank</h1>
+  <div class="clock" id="clock">0:00</div>
+  <div class="status" id="status">Ready</div>
+  <div class="row">
+    <button class="go" id="toggle" type="button">Start</button>
+    <button id="reset" type="button">Reset</button>
+  </div>
+  <div class="stats">
+    <div><span>This session</span><strong id="sets">0 planks</strong></div>
+    <div><span>Last hold</span><strong id="last">—</strong></div>
+    <div><span>Best hold</span><strong id="best">—</strong></div>
+    <div><span>Total time</span><strong id="total">0:00</strong></div>
+  </div>
+  <p class="hint">Start when you get into the plank. Stop when you drop. Your best hold is saved on this phone.</p>
+  <script>
+    const clock = document.getElementById("clock");
+    const status = document.getElementById("status");
+    const toggle = document.getElementById("toggle");
+    const resetBtn = document.getElementById("reset");
+    const setsEl = document.getElementById("sets");
+    const lastEl = document.getElementById("last");
+    const bestEl = document.getElementById("best");
+    const totalEl = document.getElementById("total");
+
+    let running = false;
+    let startedAt = 0;
+    let elapsed = 0;
+    let tickId = null;
+    let sets = 0;
+    let sessionTotal = 0;
+    let last = 0;
+    let best = Number(localStorage.getItem("plankBest") || 0);
+    let wake = null;
+
+    function fmt(ms) {
+      const s = Math.floor(ms / 1000);
+      const m = Math.floor(s / 60);
+      const r = s % 60;
+      return m + ":" + String(r).padStart(2, "0");
+    }
+
+    function render() {
+      const now = running ? Date.now() - startedAt : elapsed;
+      clock.textContent = fmt(now);
+      setsEl.textContent = sets + (sets === 1 ? " plank" : " planks");
+      lastEl.textContent = last ? fmt(last) : "—";
+      bestEl.textContent = best ? fmt(best) : "—";
+      totalEl.textContent = fmt(sessionTotal + (running ? now : 0));
+    }
+
+    async function keepAwake(on) {
+      try {
+        if (on && "wakeLock" in navigator) {
+          wake = await navigator.wakeLock.request("screen");
+        } else if (wake) {
+          await wake.release();
+          wake = null;
+        }
+      } catch (_) {}
+    }
+
+    function start() {
+      running = true;
+      startedAt = Date.now() - elapsed;
+      toggle.textContent = "Stop";
+      toggle.classList.remove("go");
+      toggle.classList.add("stop");
+      status.textContent = "Holding…";
+      keepAwake(true);
+      tickId = setInterval(render, 100);
+      render();
+    }
+
+    function stop() {
+      elapsed = Date.now() - startedAt;
+      running = false;
+      clearInterval(tickId);
+      last = elapsed;
+      sets += 1;
+      sessionTotal += elapsed;
+      if (elapsed > best) {
+        best = elapsed;
+        localStorage.setItem("plankBest", String(best));
+      }
+      elapsed = 0;
+      toggle.textContent = "Start";
+      toggle.classList.add("go");
+      toggle.classList.remove("stop");
+      status.textContent = "Rest. Last hold " + fmt(last);
+      keepAwake(false);
+      render();
+    }
+
+    toggle.addEventListener("click", () => (running ? stop() : start()));
+    resetBtn.addEventListener("click", () => {
+      running = false;
+      clearInterval(tickId);
+      elapsed = 0;
+      sets = 0;
+      sessionTotal = 0;
+      last = 0;
+      toggle.textContent = "Start";
+      toggle.classList.add("go");
+      toggle.classList.remove("stop");
+      status.textContent = "Ready";
+      keepAwake(false);
+      render();
+    });
+
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "visible" && running) keepAwake(true);
+    });
+
+    render();
+  </script>
+</body>
+</html>
