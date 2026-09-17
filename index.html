@@ -111,7 +111,7 @@
     <div><span>Best hold</span><strong id="best">—</strong></div>
     <div><span>Total time</span><strong id="total">0:00</strong></div>
   </div>
-  <p class="hint">Start when you get into the plank. Stop when you drop. Your best hold is saved on this phone.</p>
+  <p class="hint">Start when you get into the plank. Beep at start, every 10 seconds, and when you stop. Unmute the phone. Best hold is saved on this device.</p>
   <script>
     const clock = document.getElementById("clock");
     const status = document.getElementById("status");
@@ -131,12 +131,31 @@
     let last = 0;
     let best = Number(localStorage.getItem("plankBest") || 0);
     let wake = null;
+    let audio;
+    let lastBeepSec = 0;
 
     function fmt(ms) {
       const s = Math.floor(ms / 1000);
       const m = Math.floor(s / 60);
       const r = s % 60;
       return m + ":" + String(r).padStart(2, "0");
+    }
+
+    function sound(freq, ms, vol) {
+      try {
+        if (!audio) audio = new (window.AudioContext || window.webkitAudioContext)();
+        if (audio.state === "suspended") audio.resume();
+        const o = audio.createOscillator();
+        const g = audio.createGain();
+        o.type = "sine";
+        o.frequency.value = freq;
+        g.gain.value = vol || 0.12;
+        o.connect(g);
+        g.connect(audio.destination);
+        o.start();
+        o.stop(audio.currentTime + (ms || 0.12) / 1000);
+      } catch (_) {}
+      if (navigator.vibrate) navigator.vibrate(ms > 200 ? [80, 40, 80] : 40);
     }
 
     function render() {
@@ -146,6 +165,13 @@
       lastEl.textContent = last ? fmt(last) : "—";
       bestEl.textContent = best ? fmt(best) : "—";
       totalEl.textContent = fmt(sessionTotal + (running ? now : 0));
+      if (running) {
+        const sec = Math.floor(now / 1000);
+        if (sec > 0 && sec % 10 === 0 && sec !== lastBeepSec) {
+          lastBeepSec = sec;
+          sound(880, 90, 0.14);
+        }
+      }
     }
 
     async function keepAwake(on) {
@@ -162,10 +188,12 @@
     function start() {
       running = true;
       startedAt = Date.now() - elapsed;
+      lastBeepSec = 0;
       toggle.textContent = "Stop";
       toggle.classList.remove("go");
       toggle.classList.add("stop");
       status.textContent = "Holding…";
+      sound(660, 120, 0.14);
       keepAwake(true);
       tickId = setInterval(render, 100);
       render();
@@ -187,6 +215,7 @@
       toggle.classList.add("go");
       toggle.classList.remove("stop");
       status.textContent = "Rest. Last hold " + fmt(last);
+      sound(330, 220, 0.16);
       keepAwake(false);
       render();
     }
@@ -199,6 +228,7 @@
       sets = 0;
       sessionTotal = 0;
       last = 0;
+      lastBeepSec = 0;
       toggle.textContent = "Start";
       toggle.classList.add("go");
       toggle.classList.remove("stop");
